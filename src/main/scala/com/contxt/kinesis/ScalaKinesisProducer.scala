@@ -2,68 +2,95 @@ package com.contxt.kinesis
 
 import com.amazonaws.services.kinesis.producer.{ KinesisProducer, KinesisProducerConfiguration, UserRecordResult }
 import com.google.common.util.concurrent.ListenableFuture
+import com.typesafe.config.{ Config, ConfigFactory }
 import java.nio.ByteBuffer
 import scala.concurrent._
 import scala.language.implicitConversions
 import scala.util.Try
+import scala.collection.JavaConversions._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /** A lightweight Scala wrapper around Kinesis Producer Library (KPL). */
 trait ScalaKinesisProducer {
+
+  def streamId: StreamId
 
   /** Sends a record to a stream. See
     * [[[com.amazonaws.services.kinesis.producer.KinesisProducer.addUserRecord(String, String, String, ByteBuffer):ListenableFuture[UserRecordResult]*]]].
     */
   def send(partitionKey: String, data: ByteBuffer, explicitHashKey: Option[String] = None): Future[UserRecordResult]
 
-  /** Flushes all the outgoing messages, returning a Future that completes when all the flushed messages have been sent.
-    * See [[com.amazonaws.services.kinesis.producer.KinesisProducer.flushSync]].
-    */
-  def flushAll(): Future[Unit]
-
   /** Performs an orderly shutdown, waiting for all the outgoing messages before destroying the underlying producer. */
   def shutdown(): Future[Unit]
 }
 
 object ScalaKinesisProducer {
-  def apply(streamName: String, producerConfig: KinesisProducerConfiguration): ScalaKinesisProducer = {
-    val producer = new KinesisProducer(producerConfig)
-    new ScalaKinesisProducerImpl(streamName, producer)
+  def apply(
+    streamName: String,
+    kplConfig: KinesisProducerConfiguration,
+    config: Config = ConfigFactory.load()
+  ): ScalaKinesisProducer = {
+    val producerStats = ProducerStats.getInstance(config)
+    ScalaKinesisProducer(streamName, kplConfig, producerStats)
+  }
+
+  def apply(
+    streamName: String,
+    kplConfig: KinesisProducerConfiguration,
+    producerStats: ProducerStats
+  ): ScalaKinesisProducer = {
+    val streamId = StreamId(kplConfig.getRegion, streamName)
+    val producer = new KinesisProducer(kplConfig)
+    new ScalaKinesisProducerImpl(streamId, producer, producerStats)
   }
 
   private[kinesis] implicit def listenableToScalaFuture[A](listenable: ListenableFuture[A]): Future[A] = {
-    implicit val executionContext: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
     val promise = Promise[A]
     val callback = new Runnable {
       override def run(): Unit = promise.tryComplete(Try(listenable.get()))
     }
-    listenable.addListener(callback, executionContext)
+    listenable.addListener(callback, global)
     promise.future
   }
 }
 
 private[kinesis] class ScalaKinesisProducerImpl(
-  val streamName: String,
-  private val producer: KinesisProducer
+  val streamId: StreamId,
+  private val producer: KinesisProducer,
+  private val stats: ProducerStats
 ) extends ScalaKinesisProducer {
   import ScalaKinesisProducer.listenableToScalaFuture
 
   def send(partitionKey: String, data: ByteBuffer, explicitHashKey: Option[String]): Future[UserRecordResult] = {
-    producer.addUserRecord(streamName, partitionKey, explicitHashKey.orNull, data)
-  }
-
-  def flushAll(): Future[Unit] = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    Future {
-      blocking {
-        producer.flushSync()
+    stats.trackSend(streamId, data.remaining) {
+      producer.addUserRecord(streamId.streamName, partitionKey, explicitHashKey.orNull, data).map { result =>
+        if (!result.isSuccessful) throwSendFailedException(result) else result
       }
     }
   }
 
   def shutdown(): Future[Unit] = {
-    import scala.concurrent.ExecutionContext.Implicits.global
     val allFlushedFuture = flushAll()
-    allFlushedFuture.onComplete(_ => producer.destroy())
+    allFlushedFuture.onComplete { _ =>
+      producer.destroy()
+      stats.reportShutdown(streamId)
+    }
     allFlushedFuture
+  }
+
+  private def throwSendFailedException(result: UserRecordResult): Nothing = {
+    val attemptCount = result.getAttempts.size
+    val errorMessage = result.getAttempts.lastOption.map(_.getErrorMessage)
+    throw new RuntimeException(
+      s"Sending a record to $streamId failed after $attemptCount attempts, last error message: $errorMessage."
+    )
+  }
+
+  private def flushAll(): Future[Unit] = {
+    Future {
+      blocking {
+        producer.flushSync()
+      }
+    }
   }
 }
