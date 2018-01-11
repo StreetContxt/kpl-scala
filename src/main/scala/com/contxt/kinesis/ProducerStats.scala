@@ -8,6 +8,7 @@ import scala.util.control.NonFatal
 
 trait ProducerStats {
   def trackSend(streamId: StreamId, size: Int)(closure: => Future[UserRecordResult]): Future[UserRecordResult]
+  def reportInitialization(streamId: StreamId): Unit
   def reportShutdown(streamId: StreamId): Unit
 }
 
@@ -29,5 +30,6 @@ object ProducerStats {
 
 class NoopProducerStats extends ProducerStats {
   def trackSend(streamId: StreamId, size: Int)(closure: => Future[UserRecordResult]): Future[UserRecordResult] = closure
+  def reportInitialization(streamId: StreamId): Unit = {}
   def reportShutdown(streamId: StreamId): Unit = {}
 }
