@@ -61,6 +61,8 @@ private[kinesis] class ScalaKinesisProducerImpl(
 ) extends ScalaKinesisProducer {
   import ScalaKinesisProducer.listenableToScalaFuture
 
+  stats.reportInitialization(streamId)
+
   def send(partitionKey: String, data: ByteBuffer, explicitHashKey: Option[String]): Future[UserRecordResult] = {
     stats.trackSend(streamId, data.remaining) {
       producer.addUserRecord(streamId.streamName, partitionKey, explicitHashKey.orNull, data).map { result =>
