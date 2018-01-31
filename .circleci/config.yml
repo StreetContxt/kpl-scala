@@ -102,12 +102,16 @@ workflows:
     jobs:
       - build:
           filters:
+            tags:
+              only: /.*/
             branches:
               only: /.*/
       - test:
           requires:
             - build
           filters:
+            tags:
+              only: /.*/
             branches:
               only: /.*/
       - deploy:
