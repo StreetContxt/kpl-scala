@@ -49,7 +49,7 @@ object ScalaKinesisProducer {
     val callback = new Runnable {
       override def run(): Unit = promise.tryComplete(Try(listenable.get()))
     }
-    listenable.addListener(callback, global)
+    listenable.addListener(callback, ExecutionContext.global)
     promise.future
   }
 }
