@@ -71,13 +71,17 @@ private[kinesis] class ScalaKinesisProducerImpl(
     }
   }
 
-  def shutdown(): Future[Unit] = {
+  def shutdown(): Future[Unit] = shutdownOnce
+
+  private lazy val shutdownOnce: Future[Unit] = {
     val allFlushedFuture = flushAll()
+    val shutdownPromise = Promise[Unit]
     allFlushedFuture.onComplete { _ =>
-      producer.destroy()
-      stats.reportShutdown(streamId)
+      shutdownPromise.completeWith(destroyProducer())
     }
-    allFlushedFuture
+    val combinedFuture = allFlushedFuture.zip(shutdownPromise.future).map(_ => ())
+    combinedFuture.onComplete(_ => stats.reportShutdown(streamId))
+    combinedFuture
   }
 
   private def throwSendFailedException(result: UserRecordResult): Nothing = {
@@ -92,6 +96,14 @@ private[kinesis] class ScalaKinesisProducerImpl(
     Future {
       blocking {
         producer.flushSync()
+      }
+    }
+  }
+
+  private def destroyProducer(): Future[Unit] = {
+    Future {
+      blocking {
+        producer.destroy()
       }
     }
   }
