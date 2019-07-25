@@ -16,8 +16,8 @@ version := sys.props
   }
   .getOrElse("LOCAL-SNAPSHOT")
 
-val slf4j = "org.slf4j" % "slf4j-api" % "1.7.21"
-val amazonKinesisProducer = "com.amazonaws" % "amazon-kinesis-producer" % "0.12.7"
+val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
+val amazonKinesisProducer = "com.amazonaws" % "amazon-kinesis-producer" % "0.12.11"
 val typesafeConfig = "com.typesafe" % "config" % "1.3.1"
 
 libraryDependencies ++= Seq(
