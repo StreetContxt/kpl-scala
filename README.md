@@ -1,4 +1,7 @@
 # kpl-scala
+[![CircleCI](https://circleci.com/gh/StreetContxt/kpl-scala/tree/master.svg?style=shield)](https://circleci.com/gh/StreetContxt/kpl-scala/tree/master)
+[![Bintray](https://img.shields.io/bintray/v/streetcontxt/maven/kpl-scala)](https://bintray.com/streetcontxt/maven/kpl-scala/_latestVersion)
+
 A lightweight Scala wrapper around Kinesis Producer Library (KPL).
 
 The main benefit of this library is working with Scala-native Futures when
