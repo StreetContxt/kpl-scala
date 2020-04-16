@@ -7,7 +7,7 @@ import java.nio.ByteBuffer
 import scala.concurrent._
 import scala.language.implicitConversions
 import scala.util.Try
-import scala.collection.JavaConversions._
+import collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /** A lightweight Scala wrapper around Kinesis Producer Library (KPL). */
@@ -86,7 +86,7 @@ private[kinesis] class ScalaKinesisProducerImpl(
 
   private def throwSendFailedException(result: UserRecordResult): Nothing = {
     val attemptCount = result.getAttempts.size
-    val errorMessage = result.getAttempts.lastOption.map(_.getErrorMessage)
+    val errorMessage = result.getAttempts.asScala.lastOption.map(_.getErrorMessage)
     throw new RuntimeException(
       s"Sending a record to $streamId failed after $attemptCount attempts, last error message: $errorMessage."
     )

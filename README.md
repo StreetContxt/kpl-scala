@@ -9,7 +9,7 @@ interacting with KPL.
 
 ```
 resolvers in ThisBuild += Resolver.bintrayRepo("streetcontxt", "maven")
-libraryDependencies += "com.streetcontxt" %% "kpl-scala" % "1.0.5"
+libraryDependencies += "com.streetcontxt" %% "kpl-scala" % "1.1.0"
 ```
 
 
