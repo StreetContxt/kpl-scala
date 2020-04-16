@@ -1,6 +1,6 @@
 organization in ThisBuild := "com.streetcontxt"
-scalaVersion in ThisBuild := "2.11.8"
-crossScalaVersions in ThisBuild := Seq("2.11.8", "2.12.4")
+scalaVersion in ThisBuild := "2.13.1"
+crossScalaVersions := Seq("2.11.12", "2.12.11", "2.13.1")
 licenses in ThisBuild += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))
 bintrayOrganization in ThisBuild := Some("streetcontxt")
 
