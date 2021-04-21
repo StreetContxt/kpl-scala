@@ -18,6 +18,7 @@ organization in ThisBuild := "io.github.streetcontxt"
 scalaVersion in ThisBuild := "2.13.1"
 crossScalaVersions := Seq("2.11.12", "2.12.11", "2.13.1")
 licenses in ThisBuild += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))
+sonatypeCredentialHost := "s01.oss.sonatype.org"
 
 name := "kpl-scala"
 
