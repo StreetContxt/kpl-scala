@@ -11,8 +11,7 @@ interacting with KPL.
 ## Installation
 
 ```
-resolvers in ThisBuild += Resolver.bintrayRepo("streetcontxt", "maven")
-libraryDependencies += "com.streetcontxt" %% "kpl-scala" % "1.1.0"
+libraryDependencies += "io.github.streetcontxt" %% "kpl-scala" % "2.0.0"
 ```
 
 
